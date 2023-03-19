@@ -23,6 +23,7 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int dummy(void);
+int ps_list(int, int*);
 
 // ulib.c
 int stat(const char*, struct stat*);

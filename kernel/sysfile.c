@@ -84,6 +84,19 @@ sys_dummy(void)
 }
 
 
+uint64
+sys_ps_list(void) {
+
+  int limit;
+  argint(0, &limit);
+  
+  uint64 pids;
+  argaddr(1, &pids);
+  
+  return handle_ps(limit, pids);
+}
+
+
 
 uint64
 sys_read(void)

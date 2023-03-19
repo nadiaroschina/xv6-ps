@@ -681,3 +681,40 @@ procdump(void)
     printf("\n");
   }
 }
+
+int
+handle_ps(int limit, uint64 pids) {
+
+  int proc_cnt = 0;
+  for (struct proc* p = proc; p < &proc[NPROC]; p++) {
+    if (p->state != UNUSED)
+      proc_cnt++; 
+  }
+  
+  // limit = -1 for ps count; limit > 0 for ps pids
+  
+  if (limit != -1) {
+    
+    if (limit > proc_cnt) {
+      limit = proc_cnt;
+    } 
+    
+    int ind = 0;
+    for (struct proc* p = proc; p < &proc[NPROC]; p++) {
+    
+      if (p->state != UNUSED && ind < limit) {
+   
+        int success = copyout(myproc()->pagetable, pids + ind * sizeof(int), (char*) &(p->pid), sizeof(int));
+        if (success != 0)
+          return -1;
+
+        ind++;
+     }
+     
+    }
+    
+  }
+  
+  return proc_cnt;
+
+}
