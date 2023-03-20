@@ -110,8 +110,9 @@ main(int argc, char *argv[]) {
 	     printf("parent_id = %d\n", psinfo.parent_pid);
 	     printf("mem_size = %d bytes\n", psinfo.mem_size);
 	     printf("files_count = %d\n", psinfo.files_count);
-	     printf("proc_name = \"%s\"\n", psinfo.proc_name);
-	     printf("res = %d\n", res);
+	     printf("proc_name = %s\n", psinfo.proc_name);
+	     printf("proc_ticks = %d\n", psinfo.proc_ticks);
+	     printf("ps_info return value = %d\n", res);
 	     printf("\n");
 	     
 	    }

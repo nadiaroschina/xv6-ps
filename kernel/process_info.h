@@ -7,4 +7,5 @@ struct process_info {
   int mem_size;
   int files_count;
   char proc_name[NAME_SIZE];
+  uint proc_ticks;
 };

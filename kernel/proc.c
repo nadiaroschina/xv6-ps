@@ -57,6 +57,7 @@ procinit(void)
       initlock(&p->lock, "proc");
       p->state = UNUSED;
       p->kstack = KSTACK((int) (p - proc));
+      p->init_ticks = 0;
   }
 }
 
@@ -171,6 +172,7 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+  p->init_ticks = 0;
 }
 
 // Create a user page table for a given process, with no user memory,
@@ -252,6 +254,8 @@ userinit(void)
   p->cwd = namei("/");
 
   p->state = RUNNABLE;
+  
+  p->init_ticks = sys_uptime();
 
   release(&p->lock);
 }
@@ -322,6 +326,7 @@ fork(void)
 
   acquire(&np->lock);
   np->state = RUNNABLE;
+  np->init_ticks = sys_uptime();
   release(&np->lock);
 
   return pid;
@@ -816,8 +821,20 @@ int handle_ps_info(int pid, uint64 psinfo) {
     return -1; 
   }
   
-  release(&pid_proc->lock);
   
+  // proc_ticks
+  ptr += sizeof(char) * NAME_SIZE;
+  
+  uint proc_ticks = sys_uptime() - pid_proc->init_ticks;
+  
+  success = copyout(myproc()->pagetable, ptr, (char*) &proc_ticks, sizeof(uint));
+  if (success != 0) {
+    release(&pid_proc->lock);
+    return -1; 
+  }
+  
+  
+  release(&pid_proc->lock);
   return 0;
 }
 

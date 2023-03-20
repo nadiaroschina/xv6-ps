@@ -104,4 +104,7 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  
+  // also use p->lock
+  uint init_ticks;	       // Processor ticks at creation moment
 };
