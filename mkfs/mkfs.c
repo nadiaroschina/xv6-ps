@@ -9,6 +9,7 @@
 #include "kernel/types.h"
 #include "kernel/fs.h"
 #include "kernel/stat.h"
+#include "kernel/process_info.h"
 #include "kernel/param.h"
 
 #ifndef static_assert

@@ -22,3 +22,5 @@
 #define SYS_close  21
 #define SYS_dummy  22
 #define SYS_ps_list 23
+#define SYS_ps_info 24
+

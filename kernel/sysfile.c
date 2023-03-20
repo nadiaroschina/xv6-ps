@@ -9,6 +9,7 @@
 #include "defs.h"
 #include "param.h"
 #include "stat.h"
+#include "process_info.h"
 #include "spinlock.h"
 #include "proc.h"
 #include "fs.h"
@@ -94,6 +95,18 @@ sys_ps_list(void) {
   argaddr(1, &pids);
   
   return handle_ps(limit, pids);
+}
+
+
+uint64
+sys_ps_info(void) {
+  int pid;
+  argint(0, &pid);
+  
+  uint64 psinfo;  // user pointer to struct process_info
+  argaddr(1, &psinfo);
+  
+  return handle_ps_info(pid, psinfo);
 }
 
 

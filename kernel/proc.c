@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "process_info.h"
 
 struct cpu cpus[NCPU];
 
@@ -24,7 +25,8 @@ extern char trampoline[]; // trampoline.S
 // parents are not lost. helps obey the
 // memory model when using p->parent.
 // must be acquired before any p->lock.
-struct spinlock wait_lock;
+struct spinlock 
+wait_lock;
 
 // Allocate a page for each process's kernel stack.
 // Map it high in memory, followed by an invalid
@@ -704,7 +706,9 @@ handle_ps(int limit, uint64 pids) {
     
       if (p->state != UNUSED && ind < limit) {
    
+        acquire(&p->lock);
         int success = copyout(myproc()->pagetable, pids + ind * sizeof(int), (char*) &(p->pid), sizeof(int));
+        release(&p->lock);
         if (success != 0)
           return -1;
 
@@ -718,3 +722,115 @@ handle_ps(int limit, uint64 pids) {
   return proc_cnt;
 
 }
+
+int handle_ps_info(int pid, uint64 psinfo) {
+
+  struct proc* pid_proc = 0;
+  for (struct proc* p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if (p->pid == pid) {
+      pid_proc = p;
+    }
+    release(&p->lock);
+  }
+
+  acquire(&pid_proc->lock);
+
+  // state
+  uint64 ptr = psinfo;
+  enum procstate state = pid_proc->state;
+  static char *states[] = {
+  [UNUSED]    "unused",
+  [USED]      "used",
+  [SLEEPING]  "sleep ",
+  [RUNNABLE]  "runble",
+  [RUNNING]   "run   ",
+  [ZOMBIE]    "zombie"
+  };
+  char* state_str = states[state];
+  int success = copyout(myproc()->pagetable, ptr, state_str, sizeof(char) * STATE_SIZE);
+  if (success != 0) {
+    release(&pid_proc->lock);
+    return -1; 
+  }
+  
+  
+  
+  // parent_id
+  ptr += sizeof(char) * STATE_SIZE;
+  
+  acquire(&wait_lock);
+  
+  struct proc* parent = pid_proc->parent;
+  int parent_pid = 0;
+  if (parent != 0) {
+    acquire(&parent->lock);
+    parent_pid = parent->pid;
+    release(&parent->lock);
+  }
+
+  release(&wait_lock);
+  
+  
+  success = copyout(myproc()->pagetable, ptr, (char*) &parent_pid, sizeof(int));
+  if (success != 0) {
+    release(&pid_proc->lock);
+    return -1; 
+  }
+  
+  // mem_size
+  ptr += sizeof(int);
+  int mem_size = pid_proc->sz;
+  
+  success = copyout(myproc()->pagetable, ptr, (char*) &mem_size, sizeof(int));
+  if (success != 0) {
+    release(&pid_proc->lock);
+    return -1; 
+  }
+  
+  // files_count
+  ptr += sizeof(int);
+  
+  int files_count = 0;
+  for (int i = 0; i < NOFILE; i++) {
+    if (pid_proc->ofile[i]) {
+      files_count++;
+    }
+  }
+  
+  success = copyout(myproc()->pagetable, ptr, (char*) &files_count, sizeof(int));
+  if (success != 0) {
+    release(&pid_proc->lock);
+    return -1; 
+  }
+  
+  
+  // proc_name
+  ptr += sizeof(int);
+  
+  char* proc_name = pid_proc->name;
+  
+  success = copyout(myproc()->pagetable, ptr, proc_name, sizeof(char) * NAME_SIZE);
+  if (success != 0) {
+    release(&pid_proc->lock);
+    return -1; 
+  }
+  
+  release(&pid_proc->lock);
+  
+  return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
