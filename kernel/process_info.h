@@ -8,4 +8,6 @@ struct process_info {
   int files_count;
   char proc_name[NAME_SIZE];
   uint proc_ticks;
+  uint run_time;
+  uint context_switches;
 };

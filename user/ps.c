@@ -112,6 +112,8 @@ main(int argc, char *argv[]) {
 	     printf("files_count = %d\n", psinfo.files_count);
 	     printf("proc_name = %s\n", psinfo.proc_name);
 	     printf("proc_ticks = %d\n", psinfo.proc_ticks);
+	     printf("run_time = %d\n", psinfo.run_time);
+	     printf("context_switches = %d\n", psinfo.context_switches);
 	     printf("ps_info return value = %d\n", res);
 	     printf("\n");
 	     

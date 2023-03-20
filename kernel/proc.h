@@ -107,4 +107,7 @@ struct proc {
   
   // also use p->lock
   uint init_ticks;	       // Processor ticks at creation moment
+  uint run_time;               // Total time in running state
+  uint last_run_start;	       // Time of last switch to running state 
+  uint context_switches;       // Number of context switches
 };

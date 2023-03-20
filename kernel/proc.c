@@ -58,6 +58,9 @@ procinit(void)
       p->state = UNUSED;
       p->kstack = KSTACK((int) (p - proc));
       p->init_ticks = 0;
+      p->run_time = 0;               
+      p->last_run_start = 0;
+      p->context_switches = 0;
   }
 }
 
@@ -148,6 +151,7 @@ found:
   memset(&p->context, 0, sizeof(p->context));
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
+  p->context_switches += 1;
 
   return p;
 }
@@ -327,6 +331,9 @@ fork(void)
   acquire(&np->lock);
   np->state = RUNNABLE;
   np->init_ticks = sys_uptime();
+  np->run_time = 0;               
+  np->last_run_start = 0;
+  np->context_switches = 0;
   release(&np->lock);
 
   return pid;
@@ -383,6 +390,11 @@ exit(int status)
   acquire(&p->lock);
 
   p->xstate = status;
+  
+  if (p->state == RUNNING) {
+    p->run_time += sys_uptime() - p->last_run_start;
+  }
+  
   p->state = ZOMBIE;
 
   release(&wait_lock);
@@ -466,8 +478,13 @@ scheduler(void)
         // to release its lock and then reacquire it
         // before jumping back to us.
         p->state = RUNNING;
+        
+        p->last_run_start = sys_uptime();
+        
         c->proc = p;
         swtch(&c->context, &p->context);
+        
+        p->context_switches++;
 
         // Process is done running for now.
         // It should have changed its p->state before coming back.
@@ -556,6 +573,11 @@ sleep(void *chan, struct spinlock *lk)
 
   // Go to sleep.
   p->chan = chan;
+  
+  if (p->state == RUNNING) {
+    p->run_time += sys_uptime() - p->last_run_start;
+  }
+  
   p->state = SLEEPING;
 
   sched();
@@ -833,6 +855,24 @@ int handle_ps_info(int pid, uint64 psinfo) {
     return -1; 
   }
   
+  
+  // run_time
+  ptr += sizeof(uint);
+  
+  success = copyout(myproc()->pagetable, ptr, (char*) &(pid_proc->run_time), sizeof(uint));
+  if (success != 0) {
+    release(&pid_proc->lock);
+    return -1; 
+  }
+  
+  // context_switches
+  ptr += sizeof(uint);
+  
+  success = copyout(myproc()->pagetable, ptr, (char*) &(pid_proc->context_switches), sizeof(uint));
+  if (success != 0) {
+    release(&pid_proc->lock);
+    return -1; 
+  }
   
   release(&pid_proc->lock);
   return 0;
